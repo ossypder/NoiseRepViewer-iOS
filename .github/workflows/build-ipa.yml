@@ -1,0 +1,32 @@
+name: Build AltStore IPA
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build iPhone app
+        run: |
+          xcodebuild \
+            -project NoiseRepViewer.xcodeproj \
+            -target NoiseRepViewer \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath "$RUNNER_TEMP/NoiseRepBuild" \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+      - name: Package unsigned IPA
+        run: |
+          mkdir -p "$RUNNER_TEMP/ipa/Payload"
+          cp -R "$RUNNER_TEMP/NoiseRepBuild/Build/Products/Release-iphoneos/NoiseRepViewer.app" "$RUNNER_TEMP/ipa/Payload/"
+          cd "$RUNNER_TEMP/ipa"
+          zip -qry "$GITHUB_WORKSPACE/NoiseRepViewer-AltStore.ipa" Payload
+      - uses: actions/upload-artifact@v4
+        with:
+          name: NoiseRepViewer-AltStore
+          path: NoiseRepViewer-AltStore.ipa
